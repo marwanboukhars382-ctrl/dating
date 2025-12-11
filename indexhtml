@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Private Chat — Meet Someone Now</title>
+<meta name="description" content="Private chat experience — continue to unlock a private reply. 18+ only.">
+<style>
+:root{
+  --bg:#071019;
+  --card:#0f1720cc;
+  --accent:#ff2f6d;
+  --accent-2:#ff7aa2;
+  --muted:rgba(255,255,255,0.65);
+  --glass: rgba(255,255,255,0.04);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter, Tahoma, Arial, sans-serif;background:linear-gradient(180deg,#06101a 0%,#0b1320 100%);color:#fff}
+.container{max-width:460px;margin:28px auto;padding:18px}
+.card{background:var(--card);border-radius:14px;padding:16px;backdrop-filter:blur(6px);box-shadow:0 8px 30px rgba(3,6,12,0.6)}
+.profile{display:flex;gap:12px;align-items:center}
+.profile img{width:84px;height:84px;object-fit:cover;border-radius:12px;border:2px solid rgba(255,255,255,0.06)}
+.name{font-weight:700;font-size:20px}
+.status{font-size:12px;color:var(--muted)}
+.chat{margin-top:14px;background:rgba(0,0,0,0.25);padding:14px;border-radius:12px;min-height:140px}
+.bubble{display:inline-block;padding:10px 14px;border-radius:14px;margin-bottom:10px;max-width:85%;line-height:1.35}
+.bubble.bot{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff;border-radius:14px 14px 14px 4px}
+.bubble.you{background:#0b2030;color:var(--muted);border-radius:14px 14px 4px 14px;margin-left:auto}
+.fake-typing{height:18px;margin-bottom:10px}
+.input-row{display:flex;gap:10px;margin-top:12px}
+.input{flex:1;padding:12px;border-radius:24px;border:none;background:#071827;color:#fff;outline:none}
+.btn{padding:12px 14px;border-radius:20px;border:none;background:var(--accent);color:#fff;font-weight:700;cursor:pointer;box-shadow:0 8px 18px rgba(255,47,109,0.12);transition:transform .12s ease}
+.btn:active{transform:translateY(2px)}
+.cta-hero{display:block;text-align:center;margin-top:16px}
+.hint{font-size:13px;color:var(--muted);margin-top:8px;text-align:center}
+
+/* CTA pulse animation */
+.pulse{position:relative;display:inline-block}
+.pulse::after{content:"";position:absolute;inset:-8px;border-radius:22px;background:radial-gradient(circle, rgba(255,47,109,0.12), transparent 40%);animation:pulse 1.8s infinite}
+@keyframes pulse{0%{transform:scale(1);opacity:1}70%{transform:scale(1.08);opacity:0.6}100%{transform:scale(1);opacity:0}}
+
+/* modal age gate */
+.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg, rgba(2,6,12,0.6), rgba(2,6,12,0.85));z-index:9999}
+.modal-card{width:min(420px,92%);background:linear-gradient(180deg,#0b1720,#08121a);padding:22px;border-radius:12px;text-align:center}
+.modal h2{margin:0 0 8px;font-size:20px}
+.modal p{color:var(--muted);font-size:14px;margin-bottom:16px}
+.modal .age-btns{display:flex;gap:10px;justify-content:center}
+.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:10px 14px;border-radius:10px}
+.accept{background:var(--accent);padding:10px 14px;border-radius:10px;border:none;color:#fff;font-weight:700;cursor:pointer}
+
+/* responsive */
+@media (max-width:520px){
+  .profile img{width:72px;height:72px}
+  .name{font-size:18px}
+  .chat{min-height:180px}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="card">
+    <div class="profile">
+      <img id="pf" src="girl.png" alt="profile">
+      <div>
+        <div class="name">Emily, 23</div>
+        <div class="status">● Online now</div>
+      </div>
+    </div>
+
+    <div class="chat" id="chat">
+      <!-- messages injected here -->
+      <div id="welcome" class="bubble bot">Hey… I’m feeling bored and lonely right now 💕 Want to chat privately?</div>
+    </div>
+
+    <div class="input-row">
+      <input id="txt" class="input" placeholder="Type your message..." />
+      <button id="sendBtn" class="btn">Send</button>
+    </div>
+
+    <div class="cta-hero">
+      <button id="unlockBtn" class="btn pulse" style="font-size:16px">View Her Reply 🔥</button>
+      <div class="hint">By continuing you confirm you are 18+</div>
+    </div>
+  </div>
+</div>
+
+<!-- Age gate modal -->
+<div id="ageModal" class="modal" style="display:none">
+  <div class="modal-card">
+    <h2>Confirm your age</h2>
+    <p>This site contains adult oriented offers. You must be 18+ to continue.</p>
+    <div class="age-btns">
+      <button id="notOk" class="ghost">I am under 18</button>
+      <button id="ok" class="accept">I confirm I am 18+</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* CONFIG: replace with your Smartlink */
+const SMARTLINK = "YOUR_SMARTLINK_HERE";
+
+/* Show age modal on first visit or if not accepted */
+const modal = document.getElementById('ageModal');
+const ageKey = 'acceptedAge_v1';
+if(!localStorage.getItem(ageKey)){
+  modal.style.display = 'flex';
+}
+
+document.getElementById('ok').onclick = ()=>{
+  localStorage.setItem(ageKey, '1');
+  modal.style.display='none';
+};
+document.getElementById('notOk').onclick = ()=>{
+  alert('You must be 18+ to use this site.');
+};
+
+/* Chat behaviour */
+const chat = document.getElementById('chat');
+const txt = document.getElementById('txt');
+const sendBtn = document.getElementById('sendBtn');
+const unlockBtn = document.getElementById('unlockBtn');
+
+function appendBubble(text, cls='bot'){
+  const d = document.createElement('div');
+  d.className = 'bubble ' + (cls==='bot'?'bot':'you');
+  d.innerText = text;
+  chat.appendChild(d);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+/* typing simulation then bot reply */
+function botReplySequence(replyText, delay=900){
+  const typing = document.createElement('div');
+  typing.className='fake-typing';
+  typing.innerHTML = '<span style="display:inline-block;height:10px;width:8px;border-radius:6px;background:#fff;opacity:.12;margin-right:6px"></span><span style="display:inline-block;height:10px;width:8px;border-radius:6px;background:#fff;opacity:.12;margin-right:6px"></span><span style="display:inline-block;height:10px;width:8px;border-radius:6px;background:#fff;opacity:.12"></span>';
+  chat.appendChild(typing);
+  chat.scrollTop = chat.scrollHeight;
+  setTimeout(()=>{
+    typing.remove();
+    appendBubble(replyText, 'bot');
+  }, delay);
+}
+
+/* prewritten replies to increase curiosity */
+const botReplies = [
+  "If you reply, I might show you something special...",
+  "I only open messages to people who seem interesting…",
+  "Promise you won't be disappointed 😏",
+  "There’s something behind the private message you’ll like…",
+];
+
+sendBtn.onclick = ()=>{
+  const value = txt.value.trim();
+  if(!value) return;
+  appendBubble(value, 'you');
+  txt.value='';
+  // pick a random bot reply
+  const r = botReplies[Math.floor(Math.random()*botReplies.length)];
+  botReplySequence(r, 900 + Math.random()*700);
+};
+
+/* unlock button: show small countdown then redirect to offer */
+unlockBtn.onclick = ()=>{
+  // short micro-copy to increase conversion
+  unlockBtn.disabled = true;
+  let t = 4;
+  const original = unlockBtn.innerText;
+  unlockBtn.innerText = `Unlocking ${t}...`;
+  const iv = setInterval(()=>{
+    t--;
+    if(t<=0){
+      clearInterval(iv);
+      unlockBtn.innerText = 'Redirecting...';
+      // analytics pixel placeholder
+      try{
+        /* Example: send simple beacon (replace with real analytics) */
+        navigator.sendBeacon && navigator.sendBeacon('/ping','unlock');
+      }catch(e){}
+      // final redirect
+      window.location.href = SMARTLINK;
+    } else {
+      unlockBtn.innerText = `Unlocking ${t}...`;
+    }
+  },1000);
+};
+
+/* small UX: tap Enter to send */
+txt.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter'){ sendBtn.click(); }
+});
+
+/* Optional: show extra bot message after some idle time to reengage */
+let idleTimer;
+function startIdle(){
+  clearTimeout(idleTimer);
+  idleTimer=setTimeout(()=>{
+    botReplySequence("Still there? I love when people take initiative 😉", 800);
+  }, 20000); // 20s
+}
+document.addEventListener('click', startIdle);
+startIdle();
+
+/* Accessibility: if SMARTLINK not set, disable unlock */
+if(SMARTLINK.includes('YOUR_SMARTLINK_HERE')){
+  unlockBtn.onclick = ()=>{ alert('Smartlink not set. Replace SMARTLINK in code with your offer link.');};
+  // also keep age modal closed only for preview
+}
+</script>
+
+</body>
+</html>
